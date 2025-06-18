@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Almacen;
 
 class Material extends Model
 {
@@ -11,10 +12,19 @@ class Material extends Model
     public $timestamps = false;
 
     protected $fillable = [
-    'nombreMaterial', 
-    'marcaMaterial', 
-    'numeroSerie',
-    'descripcionMaterial',
-    'idAlmacen'
+        'nombreMaterial',
+        'marcaMaterial',
+        'numeroSerie',
+        'descripcionMaterial',
+        'color',
+        'estatus',
+        'estado', // 👈 agregado aquí
+        'idAlmacen'
     ];
+
+    // Relación con almacén
+    public function almacen()
+    {
+        return $this->belongsTo(Almacen::class, 'idAlmacen', 'idAlmacen');
+    }
 }
