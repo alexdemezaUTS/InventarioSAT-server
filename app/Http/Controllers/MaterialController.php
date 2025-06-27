@@ -73,6 +73,9 @@ public function index(Request $request)
 
         return response()->json(['message' => 'Material eliminado correctamente']);
     }
-
+public function byAlmacen($id)
+{
+    return response()->json(Material::where('idAlmacen', $id)->get());
+}
 
 }

@@ -31,24 +31,5 @@ class AlmacenController extends Controller
         return response()->json(['message' => 'Almacén eliminado correctamente']);
     }
 
-    public function getMaterialesPorAlmacen($idAlmacen)
-{
-    $materiales = Material::where('idAlmacen', $idAlmacen)->get();
-    return response()->json($materiales);
-}
-
-public function storeMaterialUsuario(Request $request)
-{
-    $data = $request->validate([
-        'nombreMaterial' => 'required',
-        'marcaMaterial' => 'required',
-        // otros campos excepto idAlmacen
-    ]);
     
-    $data['idAlmacen'] = $request->input('idAlmacen'); // o tomarlo del token o request
-    
-    $material = Material::create($data);
-    return response()->json($material, 201);
-}
-
 }
