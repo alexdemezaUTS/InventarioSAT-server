@@ -30,6 +30,7 @@ class Prestamo extends Model
         'fechaPrestamo',
         'fechaEntrega',
         'estadoentrega',
+        'gdrive_folder_id',
     ];
 
     protected $casts = [

@@ -58,7 +58,7 @@ class DetallePrestamoController extends Controller
     $data = $request->validate([
         'idPrestamo' => 'required|exists:prestamos,idPrestamo',
         'idMaterial' => 'required|exists:materiales,idMaterial',
-        // 'cantidad' => 'required|integer|min:1', // agrega si tienes cantidad
+        
     ]);
 
     $detalle = DetallePrestamo::create($data);
@@ -70,4 +70,18 @@ class DetallePrestamoController extends Controller
     return response()->json($detalle, 201);
 }
 
+public function destroy(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'idPrestamo' => 'required|exists:prestamos,idPrestamo',
+            'idMaterial' => 'required|exists:materiales,idMaterial',
+        ]);
+
+        $deleted = DetallePrestamo::where($data)->delete();
+
+        if ($deleted) {
+            return response()->json(['message' => 'Detalle eliminado'], 200);
+        }
+        return response()->json(['message' => 'Detalle no encontrado'], 404);
+    }
 }

@@ -6,6 +6,8 @@ use App\Models\Prestamo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use App\Services\GoogleDriveService;  
 
 class PrestamoController extends Controller
 {
@@ -13,7 +15,7 @@ class PrestamoController extends Controller
     public function index(Request $request)
     {
         $query = Prestamo::with([
-            'empleado:idUsuario,nombreUsuario',
+            'empleado:idUsuario,nombreUsuario,primerApellido,segundoApellido,correo,celular',
             'administrador:idUsuario,nombreUsuario',
             'almacenOrigen:idAlmacen,nombreAlmacen',
             'almacenDestino:idAlmacen,nombreAlmacen',
@@ -44,6 +46,7 @@ class PrestamoController extends Controller
             'administrador:idUsuario,nombreUsuario',
             'almacenOrigen:idAlmacen,nombreAlmacen',
             'almacenDestino:idAlmacen,nombreAlmacen',
+            'gdrive_folder_id',
             'detallesPrestamo.material:idMaterial,nombreMaterial,marcaMaterial,numeroSerie'
         ])->find($id);
 
@@ -58,7 +61,7 @@ class PrestamoController extends Controller
      public function store(Request $request)
     {
         $validated = $request->validate([
-            'idAlmacenOrigen'  => ['required', 'exists:almacenes,idAlmacen'],
+            'idAlmacenOrigen'  => ['nullable', 'exists:almacenes,idAlmacen'],
             'idAlmacenDestino' => ['required', 'exists:almacenes,idAlmacen'],
             'fechaPrestamo'    => ['required', 'date'],
             'fechaEntrega'     => ['nullable', 'date', 'after_or_equal:fechaPrestamo'],
@@ -128,25 +131,52 @@ class PrestamoController extends Controller
 
     /* ========== PATCH /prestamos/{id}/estado (cambiar estado) ========== */
        /** PATCH /api/prestamos/{id}/estado (cambiar estado) */
-    public function updateEstado(Request $request, $id)
-    {
-        $request->validate([
-            'estadoentrega' => ['required', Rule::in(['pendiente','aceptado','rechazado','devuelto'])],
+/* ========== PATCH /prestamos/{id}/estado ========== */
+public function updateEstado(Request $request, int $id, GoogleDriveService $drive)
+{
+    $request->validate([
+        'estadoentrega' => ['required', Rule::in(['pendiente','aceptado','rechazado','devuelto'])],
+    ]);
+
+    DB::beginTransaction();
+    try {
+        $prestamo = Prestamo::with('detallesPrestamo.material')->lockForUpdate()->findOrFail($id);
+
+        $prestamo->update([
+            'estadoentrega'   => $request->estadoentrega,
+            'idAdministrador' => Auth::id(),
         ]);
 
-        try {
-            $prestamo = Prestamo::findOrFail($id);
-            $prestamo->update([
-                'estadoentrega'  => $request->estadoentrega,
-                'idAdministrador'=> Auth::user()?->idUsuario,
-            ]);
+        if ($request->estadoentrega === 'aceptado') {
+            foreach ($prestamo->detallesPrestamo as $d) {
+                $d->material?->update(['estado' => 'ocupado']);
+            }
 
-            return response()->json($prestamo->fresh(['administrador']), 200);
-        } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Error al cambiar estado',
-                'error'   => $e->getMessage()
-            ], 500);
+            // ✅ Crear carpeta si no existe
+            if (!$prestamo->gdrive_folder_id) {
+                $folderId = $drive->createPrestamoTree($prestamo->idPrestamo);
+                $prestamo->update(['gdrive_folder_id' => $folderId]);
+            }
+
+        } elseif (in_array($request->estadoentrega, ['devuelto','rechazado'])) {
+            foreach ($prestamo->detallesPrestamo as $d) {
+                $d->material?->update(['estado' => 'libre']);
+            }
         }
+
+        DB::commit();
+
+        return response()->json(
+            $prestamo->fresh(['administrador', 'detallesPrestamo.material']),
+            200
+        );
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        return response()->json([
+            'message' => 'Error al cambiar estado',
+            'error'   => $e->getMessage()
+        ], 500);
     }
+}
 }

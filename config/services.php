@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'gdrive' => [
+    'root' => env('GOOGLE_DRIVE_ROOT'),
+],
+
+
 ];
