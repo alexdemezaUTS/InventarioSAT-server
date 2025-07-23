@@ -31,5 +31,6 @@ class DetallePrestamo extends Model
         return $this->hasMany(DetallePrestamo::class, 'idPrestamo', 'idPrestamo')
                     ->with('material:idMaterial,nombreMaterial,marcaMaterial,numeroSerie');
     }
-    
+    // En app/Models/DetallePrestamo.php
+   
 }

@@ -84,4 +84,42 @@ public function destroy(Request $request): JsonResponse
         }
         return response()->json(['message' => 'Detalle no encontrado'], 404);
     }
+   public function getOcupados(): JsonResponse
+    {
+        $detallesActivos = DetallePrestamo::
+            whereHas('prestamo', function ($query) {
+                $query->where('estadoentrega', 'aceptado');
+            })
+            // MODIFICADO: Se añade la carga de la relación 'almacenDestino' del préstamo.
+            ->with([
+                'material', 
+                'prestamo.empleado:idUsuario,nombreUsuario,primerApellido', // Carga solo los campos necesarios del empleado
+                'prestamo.almacenDestino:idAlmacen,nombreAlmacen' // Carga solo los campos necesarios del almacén
+            ])
+            ->get();
+
+        $resultado = $detallesActivos->map(function ($detalle) {
+            // Salta este detalle si por alguna razón no tiene un préstamo o material asociado.
+            if (!$detalle->prestamo || !$detalle->material) {
+                return null;
+            }
+
+            $empleado = $detalle->prestamo->empleado;
+            $almacen = $detalle->prestamo->almacenDestino;
+
+            // MODIFICADO: Se construye el nombre completo del empleado.
+            $nombreCompleto = $empleado 
+                ? trim($empleado->nombreUsuario . ' ' . $empleado->primerApellido) 
+                : 'No asignado';
+
+            return [
+                'material' => $detalle->material,
+                'usuario' => $nombreCompleto,
+                // NUEVO: Se agrega la información del almacén de destino.
+                'almacen_destino' => $almacen ? $almacen->nombreAlmacen : 'No especificado',
+            ];
+        })->filter(); // Elimina cualquier resultado nulo.
+
+        return response()->json($resultado);
+    }
 }

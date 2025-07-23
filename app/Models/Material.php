@@ -27,4 +27,5 @@ class Material extends Model
     {
         return $this->belongsTo(Almacen::class, 'idAlmacen', 'idAlmacen');
     }
+
 }

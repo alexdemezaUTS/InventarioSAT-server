@@ -27,6 +27,7 @@ class Prestamo extends Model
         'idAlmacenOrigen',
         'idAlmacenDestino',
         'detalles',
+        'comentarios', 
         'fechaPrestamo',
         'fechaEntrega',
         'estadoentrega',

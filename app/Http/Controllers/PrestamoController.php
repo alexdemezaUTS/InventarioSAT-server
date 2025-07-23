@@ -66,6 +66,7 @@ class PrestamoController extends Controller
             'fechaPrestamo'    => ['required', 'date'],
             'fechaEntrega'     => ['nullable', 'date', 'after_or_equal:fechaPrestamo'],
             'detalles'         => ['nullable', 'string'],
+            'comentarios'      => ['nullable', 'string'],
         ]);
 
         // ← aquí usamos tu PK idUsuario
@@ -105,10 +106,11 @@ class PrestamoController extends Controller
             'fechaPrestamo'    => ['sometimes', 'date'],
             'fechaEntrega'     => ['nullable', 'date', 'after_or_equal:fechaPrestamo'],
             'detalles'         => ['nullable', 'string'],
+            'comentarios'      => ['nullable', 'string'],
             'estadoentrega'    => ['sometimes', Rule::in(['pendiente','aceptado','rechazado','devuelto'])],
         ]);
 
-        $prestamo->update($validated);
+        $prestamo->update($validated); 
 
         return response()->json($prestamo->fresh([
             'empleado:idUsuario,nombre',
@@ -178,5 +180,21 @@ public function updateEstado(Request $request, int $id, GoogleDriveService $driv
             'error'   => $e->getMessage()
         ], 500);
     }
+}
+public function updateComentario(Request $request, $id)
+{
+    $prestamo = Prestamo::find($id);
+    if (!$prestamo) {
+        return response()->json(['message' => 'Préstamo no encontrado'], 404);
+    }
+
+    $validated = $request->validate([
+        'comentarios' => ['required', 'string'],
+    ]);
+
+    $prestamo->comentarios = $validated['comentarios'];
+    $prestamo->save();
+
+    return response()->json($prestamo, 200);
 }
 }

@@ -92,3 +92,7 @@ use App\Http\Controllers\DetallePrestamoController;
 Route::post('/detalle-prestamos', [DetallePrestamoController::class, 'store']);
 
 Route::delete ('detalle-prestamos', [DetallePrestamoController::class, 'destroy']);
+
+Route::patch('/prestamos/{id}/comentario', [PrestamoController::class, 'updateComentario']);
+
+Route::get('/detalles-prestamo/ocupados', [DetallePrestamoController::class, 'getOcupados']);
