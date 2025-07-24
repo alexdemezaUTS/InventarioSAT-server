@@ -4,6 +4,7 @@ namespace App\Services;
 use Google\Client;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
+use Illuminate\Support\Facades\Log;
 
 class GoogleDriveService
 {
@@ -41,5 +42,33 @@ class GoogleDriveService
     public function link(string $folderId): string
     {
         return "https://drive.google.com/drive/folders/$folderId";
+    }
+    public function uploadFile(string $folderId, $fileContent, string $fileName)
+    {
+        try {
+            // 1. Crea la metadata del archivo (nombre y carpeta padre)
+            $fileMetadata = new \Google_Service_Drive_DriveFile([
+                'name' => $fileName,
+                'parents' => [$folderId] // Especifica la carpeta donde se guardará
+            ]);
+
+            // 2. Realiza la subida del archivo
+            $file = $this->driveService->files->create($fileMetadata, [
+                'data' => $fileContent,
+                'mimeType' => 'application/pdf', // Especificamos que es un PDF
+                'uploadType' => 'media',
+                'fields' => 'id' // Solo pedimos que nos devuelva el ID del archivo creado
+            ]);
+
+            Log::info('Archivo PDF subido a Drive con éxito. ID: ' . $file->id);
+            return $file;
+
+        } catch (\Throwable $e) {
+            // Si algo falla, lo registra en el log y no detiene la ejecución
+            Log::error('Error al subir archivo a Google Drive: ' . $e->getMessage());
+            // Opcional: podrías lanzar la excepción si prefieres que el proceso falle
+            // throw $e; 
+            return null;
+        }
     }
 }

@@ -32,6 +32,7 @@ class Prestamo extends Model
         'fechaEntrega',
         'estadoentrega',
         'gdrive_folder_id',
+        'pdf_path',
     ];
 
     protected $casts = [
